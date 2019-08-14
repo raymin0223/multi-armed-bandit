@@ -51,7 +51,7 @@ class DataMaker:
         self.reward_list = [reward] * param.arms
 
         self.best_arm_idx = np.random.randint(param.arms)
-        self.logger.info('(%s) is the best arm' % self.best_arm_idx)
+        self.logger.info('at first, (%s) is the best arm' % self.best_arm_idx)
         self.reward_list[self.best_arm_idx] += param.offset
 
     def __change_arms_reward(self, round, param):
@@ -115,6 +115,7 @@ class DataMaker:
         fig.savefig(os.path.join(self.opt.dir, self.fpath, 'arms_reward.png'))
         
         self.logger.info('Making data is accomplished')
+        self.logger.info('=' * 60)
 
     def __get_arms_context(self, info, param):
         arms_context = {}
@@ -133,14 +134,18 @@ class DataMaker:
         info['stationary'] = param.stationary
         info['contextual'] = param.contextual
         
+        self.logger.info('rounds, arms_number, best_reward, offset, stationary, and contextual infomation is stored')
+        
         if param.contextual:
             self.__get_arms_context(info, param)
+            self.logger.info('arms context information is also stored')
         
         fpath = os.path.join(self.opt.dir, self.fpath, 'info.pickle')
         with open(fpath, 'wb') as f:
             pickle.dump(info, f)
             
         self.logger.info('Storing data information is accomplished')
+        self.logger.info('=' * 60)
 
     def run(self):
         _begin = datetime.datetime.now()
@@ -151,7 +156,9 @@ class DataMaker:
         self._store_data_info(param)
         
         _end = datetime.datetime.now()
+        
         self.logger.info('(%s) elapsed for data_maker.py' % (str(_end - _begin)))
+        self.logger.info('=' * 60)
 
 if __name__ == '__main__':
     data_maker = DataMaker(sys.argv[1])

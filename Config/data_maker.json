@@ -1,8 +1,8 @@
 {
-    "dir": "./data/non_stationary_slowly_contextual",
+    "dir": "./data/non_stationary_non_contextual",
     "param": {
-        "stationary": true,
-        "contextual": true,
+        "stationary": false,
+        "contextual": false,
         "rounds": 100,
         "arms": 100,
         "best_reward": 0.7,
