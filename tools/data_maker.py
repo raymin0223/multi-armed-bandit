@@ -10,30 +10,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
-from utils.conf_loader import *
+from .conf_loader import *
 
+__all__ = ['DataMaker']
 
 class DataMaker:
-    def __init__(self, conf_fname):
-        self.opt = ConfLoader(conf_fname).opt
-        
-        self.fpath = 'r%d-a%d-br%0.2f-off%0.2f' % (self.opt.param.rounds, self.opt.param.arms, self.opt.param.best_reward, self.opt.param.offset)
-        self._make_dirs()
-        
-        fpath = os.path.join(self.opt.dir, self.fpath, 'data_maker.log')
-        self._logging(fpath)
-
+    def __init__(self, opt):
+        self.opt = opt
         self.data = {}
         
-    def _make_dirs(self):
-        fpath = os.path.join(self.opt.dir, self.fpath)
-        if not os.path.isdir(fpath):
-            os.makedirs(fpath)
+        self._get_dirs()
+        
+    def _get_dirs(self):
+        stat = '' if self.opt.param.stationary else '%s_non' % self.opt.param.change_type
+        cont = '' if self.opt.param.contextual else 'non_'
+        
+        self.dir = './data/{}stationary_{}contextual'.format(stat, cont)
+        self.sub_dir = 'r%d-a%d-br%0.2f-off%0.2f' % (self.opt.param.rounds, self.opt.param.arms, self.opt.param.best_reward, self.opt.param.offset)
             
     def _logging(self, fpath):
-        if os.path.isfile(fpath):
-            os.remove(fpath)
-            
         self.logger = logging.getLogger('DataMaker')
         self.logger.setLevel(logging.DEBUG)
         if not self.logger.handlers:
@@ -87,32 +82,42 @@ class DataMaker:
     def _make_data(self, param):
         rounds = param.rounds
         arms = param.arms
+        self.round_rewards = {}
 
+        changed = False
+        checkpoint = 0
+        best_rewards = []
         fig = plt.figure(figsize=(7, 5))
         color = (random.random(), random.random(), random.random())
-        changed = False
+        
         for r in tqdm(range(rounds), ascii=True, desc='rounds'):
             self.data[r] = []
-            if param.stationary:
+            if not param.stationary:
                 changed = self.__change_arms_reward(r, param)
                 
             if changed:
+                plt.plot(range(checkpoint, checkpoint + len(best_rewards)), best_rewards, 'o', c=color)
                 color = (random.random(), random.random(), random.random())
-                
-            plt.plot(r, self.reward_list[self.best_arm_idx], 'o', c=color)
+                best_rewards = []
+                checkpoint = r
+            
+            best_rewards.append(self.reward_list[self.best_arm_idx])
+            self.round_rewards[r] = (self.best_arm_idx, self.reward_list[self.best_arm_idx])
             
             for arm in range(arms):
                 reward = np.random.binomial(1, self.reward_list[arm])
                 if reward == 1:
                     self.data[r].append(arm)
 
-        fpath = os.path.join(self.opt.dir, self.fpath, 'data.pickle')
+        fpath = os.path.join(self.dir, self.sub_dir, 'data.pickle')
         with open(fpath, 'wb') as f:
             pickle.dump(self.data, f)
             
+        if best_rewards:
+            plt.plot(range(checkpoint, checkpoint + len(best_rewards)), best_rewards, 'o', c=color)
         plt.plot(range(rounds), [param.best_reward-param.offset]*rounds, 'o', c=(0.5, 0.5, 0.5))
         plt.ylim(0, 1)
-        fig.savefig(os.path.join(self.opt.dir, self.fpath, 'arms_reward.png'))
+        fig.savefig(os.path.join(self.dir, self.sub_dir, 'arms_reward.png'))
         
         self.logger.info('Making data is accomplished')
         self.logger.info('=' * 60)
@@ -133,6 +138,7 @@ class DataMaker:
         info['offset'] = param.offset
         info['stationary'] = param.stationary
         info['contextual'] = param.contextual
+        info['round_rewards'] = self.round_rewards
         
         self.logger.info('rounds, arms_number, best_reward, offset, stationary, and contextual infomation is stored')
         
@@ -140,7 +146,7 @@ class DataMaker:
             self.__get_arms_context(info, param)
             self.logger.info('arms context information is also stored')
         
-        fpath = os.path.join(self.opt.dir, self.fpath, 'info.pickle')
+        fpath = os.path.join(self.dir, self.sub_dir, 'info.pickle')
         with open(fpath, 'wb') as f:
             pickle.dump(info, f)
             
@@ -150,16 +156,20 @@ class DataMaker:
     def run(self):
         _begin = datetime.datetime.now()
         
-        param = self.opt.param
-        self._get_arms_reward(param)
-        self._make_data(param)
-        self._store_data_info(param)
+        self._logging(os.path.join('./results', self.sub_dir, 'mab_experiment.log'))
+        fpath = os.path.join(self.dir, self.sub_dir)
+        if os.path.isdir(fpath):
+            self.logger.debug('data is already made')
+            
+        else:
+            os.makedirs(fpath)
+
+            param = self.opt.param
+            self._get_arms_reward(param)
+            self._make_data(param)
+            self._store_data_info(param)
         
         _end = datetime.datetime.now()
         
         self.logger.info('(%s) elapsed for data_maker.py' % (str(_end - _begin)))
         self.logger.info('=' * 60)
-
-if __name__ == '__main__':
-    data_maker = DataMaker(sys.argv[1])
-    data_maker.run()
