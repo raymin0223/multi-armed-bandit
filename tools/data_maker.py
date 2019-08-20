@@ -159,7 +159,7 @@ class DataMaker:
         self._logging(os.path.join('./results', self.sub_dir, 'mab_experiment.log'))
         fpath = os.path.join(self.dir, self.sub_dir)
         if os.path.isdir(fpath):
-            self.logger.debug('data is already made')
+            self.logger.debug('Data is already made')
             
         else:
             os.makedirs(fpath)

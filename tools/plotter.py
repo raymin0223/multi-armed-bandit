@@ -31,7 +31,7 @@ class Plotter:
         tmp = ((best_reward - not_best_reward) / self.__kl(best_reward, not_best_reward))
         tmp *= self.data_info['arms']
         
-        self.lowerbound.append((np.log(round + 0.00001) * (tmp + 1)))
+        self.lowerbound.append((np.log(round + 0.00001) * (tmp + 0.1)))
 
     def _get_algo_regret(self, round, algo_name, selected_arm):
         best_arm_idx, best_reward = self.data_info['round_rewards'][round]
@@ -42,21 +42,26 @@ class Plotter:
         if algo_name not in self.algo_regret:
             self.algo_regret[algo_name] = [regret]
         else:
-            self.algo_regret[algo_name].append(regret)
+            tmp = self.algo_regret[algo_name][-1]
+            self.algo_regret[algo_name].append(tmp + regret)
 
     def __plot(self, x):
+        ylim = 0
         for algo_name, regret in self.algo_regret.items():
             plt.plot(x, regret, label='%s' % algo_name)
+            ylim = max(ylim, regret[-1])
             
         plt.plot(x, self.lowerbound, label='asymptotic_lower_bound')
+        
+        return ylim
 
     def _plot_regret(self, title, fpath):
         x = range(self.data_info['rounds'])
-        plt.xlim(0, self.data_info['rounds'])
-        plt.ylim(0, 10000)
         
-        self.__plot(x)
+        ylim = self.__plot(x)
 
+        plt.xlim(0, self.data_info['rounds'])
+        plt.ylim(0, ylim + 500)
         plt.xscale('symlog')
         plt.xlabel('rounds')
         plt.ylabel('regret')

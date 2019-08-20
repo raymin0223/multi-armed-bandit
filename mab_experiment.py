@@ -46,11 +46,15 @@ class MABexp:
             with open(os.path.join(self.data_maker.dir, self.data_maker.sub_dir, 'info.pickle'), 'rb') as f:
                 self.data_info = pickle.load(f)
                 
+            self.logger.info('data and information is loaded')
+                
         except FileNotFoundError:
             self.logger.info('Data is not found. It should be created first')
             raise
     
     def _explore_exploit(self, algo_name, param, flag=True):
+        _begin = datetime.datetime.now()
+        
         algo = self.ALGO_MAP[algo_name](self.data_info['arms'], **param)
         
         for r in tqdm(range(self.data_info['rounds']), ascii=True, desc='rounds-%s' % algo_name):
@@ -63,6 +67,11 @@ class MABexp:
                 self.plotter._get_lowerbound(r)
                 
         flag = False
+        
+        _end = datetime.datetime.now()
+        
+        self.logger.info('(%s) elapsed for %s algorithm' % (str(_end - _begin), algo_name))
+        self.logger.info('=' * 60)
         
         return flag
         
