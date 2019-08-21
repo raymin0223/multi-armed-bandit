@@ -1,1 +1,2 @@
-This repo is for summarizing MAB algorithms what I did research in company internship program.
+This repo is for providing the convenient experiment environment of Multi-Armed Bandit problem.
+Summarizing Mutli-Armed Bandit research in company internship program.
