@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 __all__ = ['Plotter']
 
 class Plotter:
+    """ This class is for plotting regret results.
+    Can plot regret of each algorithm and asymptotic lowerbound suggested in paper.
+    """
     def __init__(self, data, data_info):
         self.data = data
         self.data_info = data_info
@@ -11,13 +14,13 @@ class Plotter:
         self.lowerbound = []
         self.algo_regret = {}
         
-    def __kl(self, p, q):
+    def __kl(self, P, Q):
         epsilon = 0.00001
         
-        p += epsilon
-        q += epsilon
+        P += epsilon
+        Q += epsilon
         
-        div = np.sum(p * np.log(p/q))
+        div = np.sum(P * np.log(P / Q))
 
         return div
     
@@ -61,7 +64,7 @@ class Plotter:
         ylim = self.__plot(x)
 
         plt.xlim(0, self.data_info['rounds'])
-        plt.ylim(0, ylim + 500)
+        plt.ylim(0, ylim + 1000)
         plt.xscale('symlog')
         plt.xlabel('rounds')
         plt.ylabel('regret')

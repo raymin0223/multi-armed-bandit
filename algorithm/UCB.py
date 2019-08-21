@@ -6,10 +6,14 @@ import numpy as np
 
 __all__ = ['UCB']
 
-class UCB:
+class UCB:    
+    """ This class is implementation of UCB algorithm.
+    Reference from 'Finite-time Analysis of the Multiarmed Bandit Problem'.
+    """
     def __init__(self, arms):
         self.arms = arms
-        self.n = {'rounds': arms}
+        
+        self.n = {'rounds': self.arms}
         self.reward_mean = {}
         # for the initialization of UCB algorithm param
         for arm in range(self.arms):

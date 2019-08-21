@@ -15,6 +15,9 @@ from .conf_loader import *
 __all__ = ['DataMaker']
 
 class DataMaker:
+    """ This class is for making synthetic reward dataset and its information as pickle type file.
+    If data is already made, making data process will be skipped.
+    """
     def __init__(self, opt):
         self.opt = opt
         self.data = {}
@@ -50,6 +53,12 @@ class DataMaker:
         self.reward_list[self.best_arm_idx] += param.offset
 
     def __change_arms_reward(self, round, param):
+        """ This function is for non_stationary data setting.
+        Returns changed flag and change the reward_list according to `change_type` and `change_num`.
+        
+        In abruptly change_type, randomly choose one of the arms to be next best arm and it will get `best_reward` in sudden point.
+        In slowly change_type, randomly choose one of the arms to be next best arm and its reward will slowly increase to `best_reward`. Oppositely, previous best arm's reward will slowly decrease.
+        """
         changed = False
         if param.change_type == 'abruptly':
             change_round = int(param.rounds / param.get('change_num', 10))
@@ -102,6 +111,7 @@ class DataMaker:
                 checkpoint = r
             
             best_rewards.append(self.reward_list[self.best_arm_idx])
+            # to calculate regret easily, just store best_arm_idx and its reward value
             self.round_rewards[r] = (self.best_arm_idx, self.reward_list[self.best_arm_idx])
             
             for arm in range(arms):
@@ -122,6 +132,7 @@ class DataMaker:
         self.logger.info('Making data is accomplished')
         self.logger.info('=' * 60)
 
+    # If `contextual=True` setting, contexts of each arm will be also stored in info.pickle
     def __get_arms_context(self, info, param):
         arms_context = {}
         for arm in range(param.arms):

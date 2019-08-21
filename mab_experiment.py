@@ -11,6 +11,11 @@ from tools import *
 from algorithm import *
 
 class MABexp:
+    """ This class is for doing experiment of MAB algorithm on some synthetic reward dataset.
+    Can create reward data using `DataMaker` class, get regret info of various MAB algorithm, and plot them.
+    Any experiment setting can be controlled by `./config/mab_experiment.json` file.
+    """
+    # If you implement some MAB algorithms, put them here
     ALGO_MAP = {'egreedy': Egreedy,
                 'ucb': UCB,
                 'kl_ucb' : KL_UCB,
@@ -39,6 +44,9 @@ class MABexp:
             self.logger.addHandler(handler)
         
     def _load_data(self):
+        """ Try to load reward dataset and its information pickle file.
+        If except statement works, program will be shutdown and you should set `enabled=True` in json file.
+        """
         try:
             with open(os.path.join(self.data_maker.dir, self.data_maker.sub_dir, 'data.pickle'), 'rb') as f:
                 self.data = pickle.load(f)
@@ -53,6 +61,9 @@ class MABexp:
             raise
     
     def _explore_exploit(self, algo_name, param, flag=True):
+        """ This function is for selecting arm, getting real reward from dataset, and updating parameters using that rewards. And plotting the results of regret values.
+        Returns flag to plot regret lowerbound just only once.
+        """
         _begin = datetime.datetime.now()
         
         algo = self.ALGO_MAP[algo_name](self.data_info['arms'], **param)
