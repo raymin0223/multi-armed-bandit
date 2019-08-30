@@ -1,10 +1,10 @@
 {
-    "name": "egreedy_ucb_klucb_thompson",
+    "name": "general_contextual_algorithm",
     "data": {
         "enabled": true,
         "param": {
             "stationary": true,
-            "contextual": false,
+            "contextual": true,
             "rounds": 1000000,
             "arms": 100,
             "best_reward": 0.7,
@@ -27,6 +27,12 @@
         "thompson": {
             "prior_alpha": 1,
             "prior_beta": 1
+        }
+        "linucb": {
+            "alpha": 1
+        },
+        "context_thompson": {
+            "v": 0.15
         }
     }
 }

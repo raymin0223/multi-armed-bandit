@@ -34,7 +34,7 @@ class Plotter:
         tmp = ((best_reward - not_best_reward) / self.__kl(best_reward, not_best_reward))
         tmp *= self.data_info['arms']
         
-        self.lowerbound.append((np.log(round + 0.00001) * (tmp + 0.1)))
+        self.lowerbound.append((np.log(round + 0.00001) * (tmp + 0.05)))
 
     def _get_algo_regret(self, round, algo_name, selected_arm):
         best_arm_idx, best_reward = self.data_info['round_rewards'][round]

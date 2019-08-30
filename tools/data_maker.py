@@ -25,11 +25,12 @@ class DataMaker:
         self._get_dirs()
         
     def _get_dirs(self):
-        stat = '' if self.opt.param.stationary else '%s_non' % self.opt.param.change_type
-        cont = '' if self.opt.param.contextual else 'non_'
+        param = self.opt.data.param
+        stat = '' if param.stationary else '%s_non' % param.change_type
+        cont = '' if param.contextual else 'non_'
         
         self.dir = './data/{}stationary_{}contextual'.format(stat, cont)
-        self.sub_dir = 'r%d-a%d-br%0.2f-off%0.2f' % (self.opt.param.rounds, self.opt.param.arms, self.opt.param.best_reward, self.opt.param.offset)
+        self.sub_dir = 'r%d-a%d-br%0.2f-off%0.2f' % (param.rounds, param.arms, param.best_reward, param.offset)
             
     def _logging(self, fpath):
         self.logger = logging.getLogger('DataMaker')
@@ -49,8 +50,9 @@ class DataMaker:
         self.reward_list = [reward] * param.arms
 
         self.best_arm_idx = np.random.randint(param.arms)
-        self.logger.info('at first, (%s) is the best arm' % self.best_arm_idx)
         self.reward_list[self.best_arm_idx] += param.offset
+        
+        self.best_arm_idx_list = [self.best_arm_idx]
 
     def __change_arms_reward(self, round, param):
         """ This function is for non_stationary data setting.
@@ -66,7 +68,7 @@ class DataMaker:
                 changed = True
                 random.shuffle(self.reward_list)
                 self.best_arm_idx = np.argmax(self.reward_list)
-                self.logger.info('In %s non-stationary setting, now (%s) is the best arm in round %s' % (param.change_type, self.best_arm_idx, round))
+                self.best_arm_idx_list.append(self.best_arm_idx)
         
         elif param.change_type == 'slowly':
             change_round = int(param.rounds / param.get('change_num', 10))
@@ -84,7 +86,7 @@ class DataMaker:
             if round % change_round != 0 and round % (change_round / 2) == 0:
                 changed = True
                 self.best_arm_idx = self.next_best
-                self.logger.info('In %s non-stationary setting, now (%s) is the best arm in round %s' % (param.change_type, self.best_arm_idx, round))
+                self.best_arm_idx_list.append(self.best_arm_idx)
                 
         return changed
     
@@ -135,10 +137,12 @@ class DataMaker:
     # If `contextual=True` setting, contexts of each arm will be also stored in info.pickle
     def __get_arms_context(self, info, param):
         arms_context = {}
+        dim = param.get('context_dim', 40)
         for arm in range(param.arms):
-            arms_context[arm] = np.random.rand(1, param.get('context_dim', 40))
+            arms_context[arm] = np.random.rand(dim)
         
         info['arms_context'] = arms_context
+        info['arms_context_dim'] = dim
     
     def _store_data_info(self, param):
         info = {}
@@ -147,16 +151,21 @@ class DataMaker:
         info['arms'] = param.arms
         info['best_reward'] = param.best_reward
         info['offset'] = param.offset
-        info['stationary'] = param.stationary
-        info['contextual'] = param.contextual
+        info['best_arm_idx'] = self.best_arm_idx_list
         info['round_rewards'] = self.round_rewards
+        self.logger.info('rounds, arms_number, best_reward, offset, best_arm_index, each rounds reward, and stationary or contextual information is stored')
         
-        self.logger.info('rounds, arms_number, best_reward, offset, stationary, and contextual infomation is stored')
+        info['stationary'] = param.stationary
+        if not param.stationary:
+            info['change_type'] = param.change_type
+            info['change_num'] = param.change_num
+            self.logger.info('non-stationary type and change_number infomation is stored')
         
+        info['contextual'] = param.contextual
         if param.contextual:
             self.__get_arms_context(info, param)
-            self.logger.info('arms context information is also stored')
-        
+            self.logger.info('context vector of arms information is stored')
+            
         fpath = os.path.join(self.dir, self.sub_dir, 'info.pickle')
         with open(fpath, 'wb') as f:
             pickle.dump(info, f)
@@ -167,15 +176,17 @@ class DataMaker:
     def run(self):
         _begin = datetime.datetime.now()
         
-        self._logging(os.path.join('./results', self.sub_dir, 'mab_experiment.log'))
+        self._logging(os.path.join('./results', self.sub_dir, self.opt.name, 'mab_experiment.log'))
         fpath = os.path.join(self.dir, self.sub_dir)
-        if os.path.isdir(fpath):
+        if os.path.isfile(os.path.join(fpath, 'data.pickle')):
             self.logger.debug('Data is already made')
+            self.logger.info('=' * 60)
             
         else:
-            os.makedirs(fpath)
+            if not os.path.isdir(fpath):
+                os.makedirs(fpath)
 
-            param = self.opt.param
+            param = self.opt.data.param
             self._get_arms_reward(param)
             self._make_data(param)
             self._store_data_info(param)
