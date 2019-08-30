@@ -18,14 +18,16 @@ class MABexp:
     # If you implement some MAB algorithms, put them here
     ALGO_MAP = {'egreedy': Egreedy,
                 'ucb': UCB,
-                'kl_ucb' : KL_UCB,
-                'thompson' : ThompsonSampling}
+                'kl_ucb': KL_UCB,
+                'thompson': ThompsonSampling,
+                'linucb': LinUCB,
+                'context_thompson': Context_ThompsonSampling}
     
     def __init__(self, conf_fname):
         self.opt = ConfLoader(conf_fname).opt
-        self.data_maker = DataMaker(self.opt.data)
+        self.data_maker = DataMaker(self.opt)
         
-        self.fpath = os.path.join('./results', self.data_maker.sub_dir)
+        self.fpath = os.path.join('./results', self.data_maker.sub_dir, self.opt.name)
         if not os.path.isdir(self.fpath):
             os.makedirs(self.fpath)
         self._logging(os.path.join(self.fpath, 'mab_experiment.log'))
@@ -55,7 +57,14 @@ class MABexp:
                 self.data_info = pickle.load(f)
                 
             self.logger.info('data and information is loaded')
-                
+            self.logger.info('=' * 54)
+                    
+            for k, v in self.data_info.items():
+                if k in ['round_rewards', 'arms_context']:
+                    continue
+                self.logger.info('%18s: %s' % (k, v))
+            self.logger.info('=' * 54)
+            
         except FileNotFoundError:
             self.logger.info('Data is not found. It should be created first')
             raise
@@ -66,7 +75,12 @@ class MABexp:
         """
         _begin = datetime.datetime.now()
         
-        algo = self.ALGO_MAP[algo_name](self.data_info['arms'], **param)
+        try:
+            algo = self.ALGO_MAP[algo_name](self.data_info['arms'], **param)
+        except:
+            # Contextual algorithm needs context and dim argument
+            algo = self.ALGO_MAP[algo_name](self.data_info['arms'], self.data_info['arms_context'], self.data_info['arms_context_dim'], **param)
+            
         
         for r in tqdm(range(self.data_info['rounds']), ascii=True, desc='rounds-%s' % algo_name):
             selected_arm = algo.select_arm()
@@ -82,7 +96,7 @@ class MABexp:
         _end = datetime.datetime.now()
         
         self.logger.info('(%s) elapsed for %s algorithm' % (str(_end - _begin), algo_name))
-        self.logger.info('=' * 60)
+        self.logger.info('=' * 54)
         
         return flag
         
@@ -99,12 +113,12 @@ class MABexp:
         for algo_name, param in self.opt.algo.items():
             flag = self._explore_exploit(algo_name, param, flag)
         
-        self.plotter._plot_regret(self.opt.name, os.path.join(self.fpath, '%s.png' % self.opt.name))
+        self.plotter._plot_regret(self.opt.name, os.path.join(self.fpath, 'regret_graph.png'))
         
         _end = datetime.datetime.now()
         
         self.logger.info('(%s) elapsed for mab_experiment.py' % (str(_end - _begin)))
-        self.logger.info('=' * 60)
+        self.logger.info('=' * 54)
         
 if __name__ == '__main__':
     mab_exp = MABexp(sys.argv[1])
