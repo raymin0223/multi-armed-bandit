@@ -1,11 +1,11 @@
 {
-    "name": "general_contextual_algorithm",
+    "name": "non_stationary_algorithm",
     "data": {
         "enabled": true,
         "param": {
-            "stationary": true,
-            "contextual": true,
-            "rounds": 1000000,
+            "stationary": false,
+            "contextual": false,
+            "rounds": 100000,
             "arms": 100,
             "best_reward": 0.7,
             "offset": 0.2,
@@ -27,7 +27,7 @@
         "thompson": {
             "prior_alpha": 1,
             "prior_beta": 1
-        }
+        },
         "linucb": {
             "alpha": 1
         },
